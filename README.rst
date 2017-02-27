@@ -1,15 +1,15 @@
 Overview
 ~~~~~~~~
 
-Ciscomation is a python 2.7 script for pushing commands to cisco devices based
+Ciscomation is a python 2.7 script for pushing commands to SSH2 devices based
 on xml file. It allows usage of multiprocessing, if maintenance description is
 compatible.
 
 Features
 ~~~~~~~~
 
-- supports cisco ios, ios-xe or nxos
-- multiprocess
+- Support any device that are compatible with Exscript
+- Multiprocess
 - Thanks to Exscipt detects errors in command line then you can stop or 
   continue
 - Support special keywords in command lines.
@@ -32,12 +32,12 @@ Features
     ============================= ==========================================
 
 
-Under developpement features
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Under development features
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- seve-config keeword (to support extra prompts cisco may generate)
+- save-config keyword (to support extra prompts cisco may generate)
 - condition by driver commands
-- conf-start conf-stop heywords
+- conf-start conf-stop keywords
 - command result matching for extra commands execution
 
 Usage
@@ -71,6 +71,8 @@ And run the command ciscomate directly
       --log-dir LOG_DIR     Path of the directory to put the logfiles
       --procnum PROCNUM     Number of process if maintenance is compatible with
                             multi process.
+      --display-driver      Display all drivers available to handle SSH
+                            interaction and that can be specified in the XML file
 
 When finished the script will generate in the current directory those files:
 
@@ -88,7 +90,7 @@ When finished the script will generate in the current directory those files:
 Warnings
 ~~~~~~~~
 
-Somme speical commands are not compatible with multiprocess:
+Somme special commands are not compatible with multiprocess:
     -   --print-next : Will print the result of next command
     -   --pause : After the execution of command block will prompt you to go 
         futher, or stop.
@@ -110,6 +112,7 @@ First create the maintenance description in an xml file
     <?xml version="1.0" encoding="UTF-8"?>
     <switches>
         <switch>
+            <driver>ios</driver>
             <name>sw-1.mynet.net</name>
             <commands>
     show version
@@ -121,12 +124,17 @@ First create the maintenance description in an xml file
             </commands>
         </switch>
         <switch>
+            <driver>vrp</driver>
             <name>sw-2.mynet.net</name>
             <commands>
-    show version
+    --print-next
+    display version
+    system-view
+    lldp enable
+    quit
     --multiline-start
-    show ip int brief
-    show int desc
+    save all
+    Y
     --multiline-stop
     --sleep-5
             </commands>

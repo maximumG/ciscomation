@@ -120,26 +120,10 @@ def set_connection(host, login, password, driver='ios'):
     logs.append(('info', 'Login on switch {}'.format(str(host))))
     connection.autoinit()
     specific_version = None
-    try:
-        connection.execute('show version')
-        if ' IOS ' in connection.response:
-            connection.set_driver('ios')
-        elif ' (NX-OS) ' in connection.response:
-            connection.set_driver('nxos')
-            connection.get_error_prompt().append(
-                re.compile(r'^% invalid command', re.I)
-            )
-            connection.get_error_prompt().append(
-                re.compile(r'^% invalid parameter', re.I)
-            )
-        elif ' IOS-XE ' in connection.response:
-            connection.set_driver('ios')
-    except:
-        connection.set_driver('ios')
     logs.append(
         (
             'info', 'Using driver {} for host {}'.format(
-                str(host), connection.get_driver().name
+                connection.get_driver().name, str(host)
             )
         )
     )
@@ -218,7 +202,7 @@ def run_commands(host, login, password, driver=None, commands=["show version"],
     # %% Setting up connection
     try:
         connection, specific_version, conlogs = set_connection(
-            host, login, password, driver='ios'
+            host, login, password, driver=driver
         )
         result[host]['logs'].extend(conlogs)
         if specific_version:
@@ -280,6 +264,10 @@ def run_commands(host, login, password, driver=None, commands=["show version"],
             commands.append('copy running startup')
         if save is True:
             commands.append('copy running startup')
+    elif result[host]['driver'] == 'vrp':
+        if conf_mode is True:
+            commands.insert(0, 'system-view')
+            commands.append('quit')
     else:
         result[host]['logs'].append(
             ('error', '{} Unknown driver.'.format(host))
@@ -476,6 +464,9 @@ def run_commands(host, login, password, driver=None, commands=["show version"],
         )
     if pause_end:
         pause()
+
+    if connection:
+        connection.close(True)
     return result
 
 
@@ -556,6 +547,7 @@ def run_maint(maint_data, credentials, procnum=1):
                 switch['swname'],
                 credentials[0],
                 credentials[1],
+                driver=switch['driver'],
                 commands=switch['commands'],
                 abort_on_error=True,
                 conf_mode=False,
@@ -622,7 +614,7 @@ def arg_conf(description):
         '-i', '--xml-file',
         dest='xml_file',
         type=str,
-        required=True,
+        required=False,
         help='Name of the xml file containing maintenance'
     )
     parser.add(
@@ -649,6 +641,24 @@ def arg_conf(description):
             'process.'
         )
     )
+    parser.add(
+        '--display-driver',
+        dest='display_driver',
+        action='store_true',
+        default=False,
+        help=(
+            'Display all drivers available to handle SSH interaction and that can be specified in the XML file'
+        )
+    )
+    parser.add(
+        '--validate-xml',
+        dest='validate_xml',
+        action='store_true',
+        default=False,
+        help=(
+            'Validate the XML file specified using -i or --xml-file before running the maintenance'
+        )
+    )
     return parser.parse_args()
     #######################################################
 
@@ -662,6 +672,14 @@ def main():
         '  reads the switches from it and plays the commands'
         ' specified'
     )
+
+    if ARGS.display_driver:
+        from Exscript.protocols.drivers import driver_map
+        print "Drivers which can be used in the XML maintenance file are :"
+        for key, item in driver_map.items():
+            print "    {}".format(key)
+        return 0
+
     CREDENTIALS = (
         raw_input('Username: '),
         getpass.getpass()
@@ -725,7 +743,8 @@ def main():
                                 line
                             )
                         )
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

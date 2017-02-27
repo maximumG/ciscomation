@@ -73,7 +73,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'Exscript>=2.1.503',
+        'Exscript',
         'configargparse>=0.11.0',
         'progressbar>=2.0'
     ],

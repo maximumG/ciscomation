@@ -3,6 +3,7 @@ import socket
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 from ciscomation.ciscomation_exc import CiscomationException
+from Exscript.protocols.drivers import driver_map
 
 KEYWORDS = {
     '--print-next': {
@@ -111,6 +112,11 @@ def xml_to_maintenance(filname):
                             "{} First command was empty.".format(name)
                         )
                     mp_compat = mp_compat and check_mp_commands(commands)
+                elif prop.tag == 'driver':
+                    driver = prop.text
+                    if driver not in driver_map.keys():
+                        logger.critical('The driver {} set for switch {} was not found'.format(driver, name))
+                        raise CiscomationException('The driver {} set for switch {} was not found'.format(driver, name))
                 elif prop == 'pause':
                     pause = True
                     mp_compat = False
@@ -120,6 +126,7 @@ def xml_to_maintenance(filname):
                     'swname': name,
                     'ip': ip,
                     'commands': commands,
+                    'driver': driver,
                     'pause': pause
                 }
             )
